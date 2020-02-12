@@ -1,0 +1,46 @@
+{
+    "name": "akempes/request-logging",
+    "description": "Write all incoming requests and there responses",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Arjan Kempes",
+            "email": "arjan@kempes.nu"
+        }
+    ],
+    "homepage": "https://github.com/akempes/request-logging",
+    "keywords": ["Laravel", "request-logging"],
+    "require": {
+        "laravel/framework": "~5|~6",
+        "illuminate/support": "~5|~6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.0",
+        "mockery/mockery": "^1.1",
+        "orchestra/testbench": "~3|~4",
+        "sempro/phpunit-pretty-print": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Akempes\\RequestLogging\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Akempes\\RequestLogging\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Akempes\\RequestLogging\\RequestLoggingServiceProvider"
+            ]
+        }
+    }
+}
