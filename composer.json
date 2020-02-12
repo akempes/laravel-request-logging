@@ -1,5 +1,5 @@
 {
-    "name": "akempes/request-logging",
+    "name": "akempes/laravel-request-logging",
     "description": "Write all incoming requests and there responses",
     "license": "MIT",
     "authors": [
@@ -8,8 +8,8 @@
             "email": "arjan@kempes.nu"
         }
     ],
-    "homepage": "https://github.com/akempes/request-logging",
-    "keywords": ["Laravel", "request-logging"],
+    "homepage": "https://github.com/akempes/laravel-request-logging",
+    "keywords": ["Laravel", "request", "logging"],
     "require": {
         "laravel/framework": "~5|~6",
         "illuminate/support": "~5|~6"
