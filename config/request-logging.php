@@ -2,7 +2,7 @@
 
 return [
 
-    'enabled' => evn('REQUEST_LOGGING_ENABLED', true),
+    'enabled' => env('REQUEST_LOGGING_ENABLED', true),
 
     'log-channels' => [
         'stack'
