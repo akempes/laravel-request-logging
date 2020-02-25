@@ -4,9 +4,9 @@ namespace Akempes\RequestLogging;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class LogRequest
@@ -27,7 +27,7 @@ class LogRequest
 
         if (
             config('request-logging.enabled', false) &&
-            in_array($request->getMethod(), config('request-logging.methods', [])) &&
+            $this->inMethodsArray($request) &&
             !$this->inExceptArray($request)
         ) {
 
@@ -71,7 +71,7 @@ class LogRequest
 
         $durationLimit = config('request-logging.request-duration-limit', false);
         if($durationLimit && $duration > $durationLimit) {
-            \Log::warning('Request exceeded response duration threshold. It took ' . $duration . 'ms to respond to ' . $request->getPathInfo() );
+            $this->writeWarningMessage('Request exceeded response duration threshold. It took ' . $duration . 'ms to respond to ' . $request->getPathInfo());
         }
 
         $status = strtoupper($response->getStatusCode());
@@ -95,8 +95,6 @@ class LogRequest
                 return $this->flattenFiles($file);
             });
         }
-
-        return (string) $file;
     }
 
     private function microtime_float()
@@ -107,7 +105,23 @@ class LogRequest
 
     private function writeMessage($message)
     {
-        Log::stack(config('request-logging.log-channels', []))->info($message);
+        Log::stack(config('request-logging.log-channels', []))->{config('request-logging.log-level', 'info')}($message);
+    }
+
+    private function writeWarningMessage($message)
+    {
+        Log::stack(config('request-logging.warning-log-channels', []))->{config('request-logging.warning-log-level', 'warning')}($message);
+    }
+
+    private function inMethodsArray($request)
+    {
+        foreach (config('request-logging.methods', []) as $method) {
+            if (strtoupper($method) === $request->getMethod()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function inExceptArray($request)

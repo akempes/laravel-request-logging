@@ -4,20 +4,12 @@ return [
 
     'enabled' => env('REQUEST_LOGGING_ENABLED', true),
 
-    'log-channels' => [
-        'stack'
-    ],
-
     'methods' => [
         'GET',
         'POST',
         'PUT',
         'DELETE',
     ],
-
-    'show-response-html' => false,
-
-    'request-duration-limit' => false,
 
     'exclude-routes' => [
     ],
@@ -27,7 +19,20 @@ return [
         'password_confirmation',
     ],
 
+    'request-duration-limit' => false,
+    'show-response-html' => false,
+
     'exclude-response-fields' => [
     ],
+
+    'log-channels' => [
+        'stack'
+    ],
+    'log-level' => 'info',
+
+    'warning-log-channels' => [
+        'stack'
+    ],
+    'warning-log-level' => 'warning',
 
 ];
