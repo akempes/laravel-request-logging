@@ -3,4 +3,3 @@ This Laravel package contains middleware wich will log requests and there respon
 
 # TODO
 - Documentation
-- Tests

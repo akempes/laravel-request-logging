@@ -89,12 +89,10 @@ class LogRequest
             return $file->getClientOriginalName();
         }
 
-        if (is_array($file)) {
-            return collect($file)->map(function ($file)
-            {
-                return $this->flattenFiles($file);
-            });
-        }
+        return collect($file)->map(function ($file)
+        {
+            return $this->flattenFiles($file);
+        });
     }
 
     private function microtime_float()

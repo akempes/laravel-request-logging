@@ -2,19 +2,11 @@
 
 namespace Akempes\RequestLogging\Tests;
 
-use Carbon\Carbon;
-use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use Akempes\RequestLogging\RequestLoggingServiceProvider;
+use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
 abstract class TestCase extends OrchestraTestCase
 {
-
-    /** @var \Carbon\Carbon */
-    protected $now;
-
-    /** @var \Spatie\TemporaryDirectory\TemporaryDirectory */
-    protected $temporaryDirectory;
-
     public function setUp(): void
     {
         parent::setUp();
