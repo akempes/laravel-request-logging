@@ -3,7 +3,7 @@
 [![Total Downloads](https://poser.pugx.org/akempes/laravel-request-logging/downloads)](https://packagist.org/packages/akempes/laravel-request-logging)
 [![License](https://poser.pugx.org/akempes/laravel-request-logging/license)](https://packagist.org/packages/akempes/laravel-request-logging)
 
-This Laravel package contains middleware to log requests and there responses including all parameters. This will allow you to monitor and replay requests what can be extremely helpful for debugging purpose.
+This Laravel package contains middleware to log requests and there responses including all parameters. This will allow you to monitor and replay requests which can be extremely helpful for debugging purposes.
 
 ## Installation
 
