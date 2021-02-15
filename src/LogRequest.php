@@ -76,9 +76,14 @@ class LogRequest
 
         $status = strtoupper($response->getStatusCode());
 
+        $redirect = '';
+        if ($status >= 300 && $status < 400) {
+            $redirect = " - Redirecting to " . $response->getTargetUrl();
+        }
+
         $bodyAsJson = $request->expectsJson() ? json_encode(Arr::except(json_decode($response->getContent(), true), config('request-logging.exclude-response-fields', []))) : (config('request-logging.show-response-html', false) ? $response->getContent() : 'Non-JSON content returned');
 
-        $message = '#' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}";
+        $message = '#' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
 
         $this->writeMessage($message);
     }
