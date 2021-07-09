@@ -60,7 +60,7 @@ class LogRequest
             ->implode(',')
         ;
 
-        $message = '#' . Str::after($this->startedAt, '.') . " {$method} {$uri} - Body: {$bodyAsJson} - Files: ". $files;
+        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$method} {$uri} - Body: {$bodyAsJson} - Files: ". $files;
 
         $this->writeMessage($message);
     }
@@ -83,7 +83,7 @@ class LogRequest
 
         $bodyAsJson = $request->expectsJson() ? json_encode(Arr::except(json_decode($response->getContent(), true), config('request-logging.exclude-response-fields', []))) : (config('request-logging.show-response-html', false) ? $response->getContent() : 'Non-JSON content returned');
 
-        $message = '#' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
+        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
 
         $this->writeMessage($message);
     }
