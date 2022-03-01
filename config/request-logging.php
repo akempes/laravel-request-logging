@@ -35,4 +35,10 @@ return [
     ],
     'warning-log-level' => 'warning',
 
+    'database-logging' => [
+        'enabled' => false,
+        'table' => 'requests',
+        'persistence' => 2,
+        'limit-response' => 2000,
+    ],
 ];

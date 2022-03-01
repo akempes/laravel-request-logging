@@ -3,7 +3,9 @@
 namespace Akempes\RequestLogging\Tests;
 
 use Akempes\RequestLogging\LogRequest;
+use Carbon\Carbon;
 use Config;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -12,12 +14,12 @@ use TiMacDonald\Log\LogFake;
 
 class RequestLogTest extends TestCase
 {
+    use RefreshDatabase;
 
     private $httpVerbs = ['get', 'put', 'post', 'delete'];
 
     public function setUp(): void
     {
-
         parent::setUp();
 
         \Route::any('/_test/html', function () {
@@ -264,7 +266,7 @@ class RequestLogTest extends TestCase
 
         Log::channel('Stack:default_testing_stack_channel.stack')->assertNothingLogged();
 
-        Config::set('request-logging.request-duration-limit', 1);
+        Config::set('request-logging.request-duration-limit', 0.001);
 
         $data = ['foo' => 'bar'];
 
@@ -452,7 +454,7 @@ class RequestLogTest extends TestCase
 
         Log::channel('Stack:default_testing_stack_channel.stack')->assertNothingLogged();
 
-        Config::set('request-logging.request-duration-limit', 1);
+        Config::set('request-logging.request-duration-limit', 0.001);
         Config::set('request-logging.warning-log-channels', ['daily']);
 
         $data = ['foo' => 'bar'];
@@ -480,7 +482,7 @@ class RequestLogTest extends TestCase
 
         Log::channel('Stack:default_testing_stack_channel.stack')->assertNothingLogged();
 
-        Config::set('request-logging.request-duration-limit', 1);
+        Config::set('request-logging.request-duration-limit', 0.001);
         Config::set('request-logging.warning-log-level', 'debug');
 
         $data = ['foo' => 'bar'];
@@ -497,5 +499,131 @@ class RequestLogTest extends TestCase
             ->assertLogged('debug', function ($message) use($data) {
                 return Str::contains($message, '/_test/html');
             });
+    }
+
+    /** @test */
+    public function it_should_log_to_the_database_table_when_enabled()
+    {
+        $this->withoutExceptionHandling();
+
+        Log::swap(new LogFake);
+
+        $data = ['foo' => 'bar'];
+
+        Config::set('request-logging.database-logging.enabled', false);
+
+        $this->assertDatabaseMissing('requests', [
+            'method' => 'post',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'request_size' => 13,
+            'response_size' => 49,
+            'status' => 200,
+        ]);
+
+        $response = $this->POST('/_test/json', $data, ['Accept' => 'application/json']);
+
+        Config::set('request-logging.database-logging.enabled', true);
+
+        $this->assertDatabaseMissing('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'request_size' => 13,
+            'response_size' => 49,
+            'status' => 200,
+        ]);
+
+        $response = $this->POST('/_test/json', $data, ['Accept' => 'application/json']);
+
+        $this->assertDatabaseHas('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'request_size' => 13,
+            'response_size' => 49,
+            'status' => 200,
+        ]);
+    }
+
+    /** @test */
+    public function it_should_remove_database_records_when_exeeding_the_persistence_limit()
+    {
+        $this->withoutExceptionHandling();
+
+        Log::swap(new LogFake);
+
+        $data = ['foo' => 'bar'];
+
+        Config::set('request-logging.database-logging.enabled', true);
+        Config::set('request-logging.database-logging.persistence', 2);
+
+        $this->assertDatabaseMissing('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'status' => 200,
+        ]);
+
+        $response = $this->POST('/_test/json', $data, ['Accept' => 'application/json']);
+
+        $this->assertDatabaseHas('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'status' => 200,
+        ]);
+
+        Carbon::setTestNow(Carbon::now()->addDays(5));
+
+        $response = $this->GET('/_test/html');
+
+        $this->assertDatabaseMissing('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'status' => 200,
+        ]);
+
+        $this->assertDatabaseHas('requests', [
+            'method' => 'GET',
+            'uri' => '/_test/html',
+            'status' => 200,
+        ]);
+    }
+
+    /** @test */
+    public function it_should_truncate_response_data_when_logging_to_the_database()
+    {
+        $this->withoutExceptionHandling();
+
+        Log::swap(new LogFake);
+
+        $data = ['foo' => 'bar'];
+
+        Config::set('request-logging.database-logging.enabled', true);
+        Config::set('request-logging.database-logging.limit-response', 5);
+
+        $this->assertDatabaseMissing('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'request_size' => 13,
+            'response' => '{"pac...',
+            'response_size' => 49,
+            'status' => 200,
+        ]);
+
+        $response = $this->POST('/_test/json', $data, ['Accept' => 'application/json']);
+
+        $this->assertDatabaseHas('requests', [
+            'method' => 'POST',
+            'uri' => '/_test/json',
+            'body' => json_encode($data),
+            'request_size' => 13,
+            'response' => '{"pac...',
+            'response_size' => 49,
+            'status' => 200,
+        ]);
     }
 }

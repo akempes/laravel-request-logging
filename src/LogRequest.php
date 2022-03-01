@@ -2,9 +2,12 @@
 
 namespace Akempes\RequestLogging;
 
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -13,6 +16,7 @@ class LogRequest
 {
 
     public $startedAt;
+    public $requestId;
 
     /**
      * Handle an incoming request.
@@ -56,13 +60,26 @@ class LogRequest
             {
                 return $this->flattenFiles($file);
             })
-            ->flatten()
-            ->implode(',')
+            ->flatten();
         ;
 
-        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$method} {$uri} - Body: {$bodyAsJson} - Files: ". $files;
+        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$method} {$uri} - Body: {$bodyAsJson} - Files: ". $files->implode(',');
 
         $this->writeMessage($message);
+
+        if (config('request-logging.database-logging.enabled')) {
+            $this->requestId = DB::table(config('request-logging.database-logging.table'))
+                ->insertGetId([
+                    'ip' => $request->ip(),
+                    'method' => $method,
+                    'uri' => $uri,
+                    'body' => $bodyAsJson,
+                    'request_size' => strlen($bodyAsJson),
+                    'files' => json_encode($files),
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+        }
     }
 
     private function logResponse($response, Request $request)
@@ -86,6 +103,27 @@ class LogRequest
         $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
 
         $this->writeMessage($message);
+
+        if (config('request-logging.database-logging.enabled')) {
+            DB::table(config('request-logging.database-logging.table'))
+                ->where('id', $this->requestId)
+                ->update([
+                    'status' => $status,
+                    'duration' => $duration,
+                    'response' => config('request-logging.database-logging.limit-response', 0) > 0 ? substr($bodyAsJson, 0, config('request-logging.database-logging.limit-response')) . '...' : $bodyAsJson,
+                    'response_size' => strlen($bodyAsJson),
+                    'updated_at' => Carbon::now(),
+                ]);
+
+            if (Cache::get('request-logging-truncate-table', 0) < Carbon::now()->unix()) {
+
+                DB::table(config('request-logging.database-logging.table'))
+                    ->where('created_at', '<', Carbon::now()->subDay(config('request-logging.database-logging.persistence', 2)))
+                    ->delete();
+
+                Cache::set('request-logging-truncate-table', Carbon::now()->addDay()->startOfDay()->unix());
+            }
+        }
     }
 
     public function flattenFiles($file)

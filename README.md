@@ -76,3 +76,20 @@ Same as log-channel except this channel will only be used for logs of requests e
 
 #### warning-log-level
 Same as log-level except the default log-level is `warning`. This log level will only be used for logs of requests exceeding the `request-duration-limit`.
+
+#### database-logging
+Besides logging to a file you may opt for logging to a database table.
+
+*enabled*  
+Enable the database logging  
+
+*table*  
+The table name, default value is 'requests'.  
+
+*persistence*  
+Depending on your settings, application and traffic log files (and database) may consume a fair amount of storage data. To redress this issue, the logged requests are removed form the table after the set amount of days. Default value is 2 days.
+
+*limit-response*  
+To prevent a huge database table you may want to limit the stored response data. Then setting this to a value > 0 the data is truncated after the set amount of characters. The default value is 2000.
+
+
