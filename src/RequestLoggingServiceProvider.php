@@ -16,6 +16,10 @@ class RequestLoggingServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/request-logging.php' => config_path('request-logging.php')
         ], 'config');
+        
+        $this->publishes([
+            __DIR__ . '/../database/migrations' => database_path('migrations')
+        ], 'migrations');
     }
 
 
