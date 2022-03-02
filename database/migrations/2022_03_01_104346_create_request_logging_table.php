@@ -23,7 +23,7 @@ class CreateRequestLoggingTable extends Migration
             $table->json('body')->nullable();
             $table->integer('request_size')->nullable();
             $table->json('files')->nullable();
-            $table->json('response')->nullable();
+            $table->text('response')->nullable();
             $table->integer('response_size')->nullable();
             $table->timestamps();
         });
