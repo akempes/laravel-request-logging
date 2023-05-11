@@ -39,6 +39,10 @@ Finally, although optionally, you can publish the configuration file:
 php artisan vendor:publish --provider="Akempes\RequestLogging\RequestLoggingServiceProvider"
 ```
 
+## Upgrade Guide
+
+### 1.x -> 2.x
+It shouldn't be hard, just run `php artisan vendor:publish --provider="Akempes\RequestLogging\RequestLoggingServiceProvider"` to get the new migration. Don't forget to run `php artisan migrate` as well.
 
 ## Configuration
 
