@@ -92,6 +92,7 @@ class LogRequest
         }
 
         $status = strtoupper($response->getStatusCode());
+        $userId = optional($request->user())->id;
 
         $redirect = '';
         if ($status >= 300 && $status < 400) {
@@ -100,7 +101,7 @@ class LogRequest
 
         $bodyAsJson = $request->expectsJson() ? json_encode(Arr::except(json_decode($response->getContent(), true), config('request-logging.exclude-response-fields', []))) : (config('request-logging.show-response-html', false) ? $response->getContent() : 'Non-JSON content returned');
 
-        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
+        $message = 'User: ' . ($userId ? '#' . $userId : 'unknown ') . ' IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
 
         $this->writeMessage($message);
 
@@ -108,6 +109,7 @@ class LogRequest
             DB::table(config('request-logging.database-logging.table'))
                 ->where('id', $this->requestId)
                 ->update([
+                    'user_id' => $userId,
                     'status' => $status,
                     'duration' => $duration,
                     'response' => config('request-logging.database-logging.limit-response', 0) > 0 ? substr($bodyAsJson, 0, config('request-logging.database-logging.limit-response')) . '...' : $bodyAsJson,
