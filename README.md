@@ -96,4 +96,31 @@ Depending on your settings, application and traffic log files (and database) may
 *limit-response*  
 To prevent a huge database table you may want to limit the stored response data. Then setting this to a value > 0 the data is truncated after the set amount of characters. The default value is 2000.
 
+#### request-log-format
+You are able to compose custom log messages using the variables as shown below.
 
+| Variable | Description |
+|---|---|
+| *{microTimeStamp}* | A very precise timestamp. |
+| *{requestId}* | In order keep track of request and response, the last digits of the {microTimeStamp} are used as an ID. Although this ID is not unique, it is in general enough to separate multiple incoming requests. |
+| *{ip}* | IP address. |
+| *{method}* | HTTP method (GET, POST, PUT, ...) |
+| *{url}* | Request path. |
+| *{requestBody}* | All request data. |
+| *{files}* | When documents are uploaded the filenames (and some metadata) are shown. Note: The content of the file is NOT logged. |
+
+#### response-log-format
+You are able to compose custom log messages using the variables as shown below.
+
+| Variable | Description |
+|---|---|
+| *{microTimeStamp}* | A very precise timestamp. |
+| *{requestId}* | Has the same value as the `requestId` used in the request log message. This will help you finding the request belonging to this response. |
+| *{userId}* | When the user is authenticated the id will be shown, empty otherwise. |
+| *{ip}* | IP address. |
+| *{databaseId}* | Shows the record ID when using database-logging. Note: The ID is not available in the request logging format. The log message is first send to the Log facade before an attempt is made to store the message it in the database. |
+| *{responseStatusCode}* | HTTP status code to response. |
+| *{duration}* | Duration between request and response in milliseconds. |
+| *{responseBody}* | Data returned to client. |
+| *{targetUrl}* | Empty by default. Contains the target url when the response is a redirect. (`responseStatusCode` in 300-series) |
+| *{isRedirecting}* | Same as `{targetUrl}` but with 'Redirecting to' prefix. Default is still empty, only when the response is a redirect. |

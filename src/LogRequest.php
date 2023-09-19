@@ -16,7 +16,7 @@ class LogRequest
 {
 
     public $startedAt;
-    public $requestId;
+    public $dbRecordId;
 
     /**
      * Handle an incoming request.
@@ -27,7 +27,7 @@ class LogRequest
      */
     public function handle(Request $request, Closure $next)
     {
-        $this->startedAt = $this->microtime_float();
+        $this->startedAt = microtime(true);
 
         if (
             config('request-logging.enabled', false) &&
@@ -63,12 +63,22 @@ class LogRequest
             ->flatten();
         ;
 
-        $message = 'IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$method} {$uri} - Body: {$bodyAsJson} - Files: ". $files->implode(',');
+        $data = [
+            '{microTimeStamp}' => $this->startedAt,
+            '{requestId}' => $this->getRequestId(),
+            '{ip}' => $request->ip(),
+            '{method}' => $method,
+            '{uri}' => $uri,
+            '{requestBody}' => $bodyAsJson,
+            '{files}' => $files->implode(','),
+        ];
+        $format = '#{requestId} IP: {ip} {method} {uri} - Body: {requestBody} - Files: {files}';
+        $message = strtr(config('request-logging.request-log-format', $format), $data);
 
         $this->writeMessage($message);
 
         if (config('request-logging.database-logging.enabled')) {
-            $this->requestId = DB::table(config('request-logging.database-logging.table'))
+            $this->dbRecordId = DB::table(config('request-logging.database-logging.table'))
                 ->insertGetId([
                     'ip' => $request->ip(),
                     'method' => $method,
@@ -84,7 +94,7 @@ class LogRequest
 
     private function logResponse($response, Request $request)
     {
-        $duration = ($this->microtime_float() - $this->startedAt) * 1000;
+        $duration = (microtime(true) - $this->startedAt) * 1000;
 
         $durationLimit = config('request-logging.request-duration-limit', false);
         if($durationLimit && $duration > $durationLimit) {
@@ -95,19 +105,34 @@ class LogRequest
         $userId = optional($request->user())->id;
 
         $redirect = '';
+        $target = '';
         if ($status >= 300 && $status < 400) {
-            $redirect = " - Redirecting to " . $response->getTargetUrl();
+            $target = $response->getTargetUrl();
+            $redirect = "Redirecting to $target";
         }
 
         $bodyAsJson = $request->expectsJson() ? json_encode(Arr::except(json_decode($response->getContent(), true), config('request-logging.exclude-response-fields', []))) : (config('request-logging.show-response-html', false) ? $response->getContent() : 'Non-JSON content returned');
 
-        $message = 'User: ' . ($userId ? '#' . $userId : 'unknown ') . ' IP: ' . $request->ip() . ' #' . Str::after($this->startedAt, '.') . " {$status} - Duration: {$duration}ms - Body: {$bodyAsJson}" . $redirect;
+        $data = [
+            '{microTimeStamp}' => $this->startedAt,
+            '{requestId}' => $this->getRequestId(),
+            '{userId}' => $userId ? $userId : 'unknown ',
+            '{ip}' => $request->ip(),
+            '{databaseId}' => $this->dbRecordId,
+            '{responseStatusCode}' => $status,
+            '{duration}' => $duration . 'ms',
+            '{responseBody}' => $bodyAsJson,
+            '{targetUrl}' => $target,
+            '{isRedirecting}' => $redirect,
+        ];
+        $format = '#{requestId} User: #{userId} IP: {ip} DB: #{databaseId} {responseStatusCode} - Duration: {duration} - Body: {responseBody} {isRedirecting}';
+        $message = strtr(config('request-logging.response-log-format', $format), $data);
 
         $this->writeMessage($message);
 
         if (config('request-logging.database-logging.enabled')) {
             DB::table(config('request-logging.database-logging.table'))
-                ->where('id', $this->requestId)
+                ->where('id', $this->dbRecordId)
                 ->update([
                     'user_id' => $userId,
                     'status' => $status,
@@ -140,10 +165,9 @@ class LogRequest
         });
     }
 
-    private function microtime_float()
+    private function getRequestId()
     {
-        list($usec, $sec) = explode(" ", microtime());
-        return ((float)$usec + (float)$sec);
+        return Str::after($this->startedAt, '.');
     }
 
     private function writeMessage($message)

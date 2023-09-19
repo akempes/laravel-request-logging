@@ -8,6 +8,7 @@ return [
         'GET',
         'POST',
         'PUT',
+        'PATCH',
         'DELETE',
     ],
 
@@ -41,4 +42,9 @@ return [
         'persistence' => 2,
         'limit-response' => 2000,
     ],
+
+    'request-log-format' => '#{requestId} IP: {ip} {method} {uri} - Body: {requestBody} - Files: {files}',
+
+    'response-log-format' => '#{requestId} User: #{userId} IP: {ip} DB: #{databaseId} {responseStatusCode} - Duration: {duration} - Body: {responseBody} {isRedirecting}',
+
 ];
